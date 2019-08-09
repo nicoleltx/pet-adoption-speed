@@ -1,0 +1,134 @@
+---
+title: "Project2"
+author: "Tianjie Xu"
+date: "May 2, 2019"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(varhandle)
+library(leaps)
+library(glmnet)
+library(readxl)
+```
+
+```{r}
+#import data
+train <- read_excel('Data.xlsx')
+train <- na.omit(train)
+```
+
+```{r}
+#Factor
+train$Type <- as.factor(train$Type)
+train$Breed1 <- as.factor(train$Breed1)
+train$Gender <- as.factor(train$Gender)
+train$Color1 <- as.factor(train$Color1)
+train$Color2 <- as.factor(train$Color2)
+train$Color3 <- as.factor(train$Color3)
+train$MaturitySize <- as.factor(train$MaturitySize)
+train$FurLength <- as.factor(train$FurLength)
+train$Vaccinated <- as.factor(train$Vaccinated)
+train$Dewormed <- as.factor(train$Dewormed)
+train$Sterilized <- as.factor(train$Sterilized)
+train$Health <- as.factor(train$Health)
+#train$State <- as.factor(train$State)
+train$AdoptionSpeed <- as.factor(train$AdoptionSpeed)
+train$mixbreed <- as.factor(train$mixbreed)
+train$mostpopular <- as.factor(train$mostpopular)
+train$`adoptionspeed0,1` <- as.factor(train$`adoptionspeed0,1`)
+train$Adopt <- as.factor(train$Adopt)
+```
+
+```{r}
+#Clean up
+train$Name <- NULL 
+train$Breed2 <- NULL
+train$RescuerID <- NULL
+train$Description <- NULL
+train$PetID <- NULL
+train$Descriptionlen <- NULL
+train$`adoptionspeed0,1` <- NULL
+train$AdoptionSpeed <- NULL
+train$State <- NULL
+train$Breed1 <- NULL
+
+```
+
+```{r}
+#test
+#
+#train$`Crime Index Ration per 100,000, 2017` <- NULL
+#train$`living space per capita(sq ft)` <- NULL
+#train$`Median income by State` <- NULL
+#
+#train$`most popular` <- NULL
+#
+#train$ave_sentiment <- NULL
+#
+#train$`Dog Friendly` <- NULL
+#train$`Easy To Groom` <- NULL
+#train$`Easy To Train` <- NULL
+#train$`Exercise Needs` <- NULL
+#train$`Friendly Toward Strangers` <- NULL
+#train$`General Health` <- NULL
+#train$`Incredibly Kid Friendly Dogs` <- NULL
+#train$Intelligence <- NULL
+#train$`Potential For Playfulness` <- NULL
+#train$`Tendency To Bark Or Howl` <- NULL
+#
+train$PC1 <- NULL
+train$PC2 <- NULL
+train$PC3 <- NULL
+train$PC4 <- NULL
+train$PC5 <- NULL
+#
+
+
+```
+
+
+
+```{r}
+str(train)
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+#Split data
+set.seed(12345)
+inTrain1 <- sample(nrow(train), 0.7*nrow(train))
+dft <- data.frame(train[inTrain1,])
+dfv <- data.frame(train[-inTrain1,])
+```
+
+```{r}
+#Glm1
+fit1 <- glm(Adopt ~., data = dft, family = "binomial")
+summary(fit1)
+```
+
+```{r}
+#glm score
+Actual.v <- dfv$Adopt
+predicted.probability.v <- predict(fit1, newdata=dfv,type ="response") 
+cutoff <- 0.5
+Predicted <- ifelse(predicted.probability.v > cutoff, 1, 0)
+confusion <- table(Actual.v,Predicted)
+confusion
+accuracy1 <- (confusion[1,1]+confusion[2,2])/(confusion[1,1]+confusion[1,2]+confusion[2,1]+confusion[2,2])
+accuracy1 
+```
+

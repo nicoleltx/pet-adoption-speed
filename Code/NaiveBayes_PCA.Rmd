@@ -1,0 +1,181 @@
+---
+title: "prj_naivebayes"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(e1071)
+df <- read.csv("C:/Users/86187/Desktop/758T Data Mining/prj/Data.csv")
+#df <- read.csv("C:/Users/86187/Desktop/758T Data Mining/prj/train data.csv")
+
+##DELETE NAME etc. variables
+df <- df[,-c(2,4,5,18,19,21,22)]
+df[is.na(df)] <- 0
+#df2 <- df2[,-c(2,4,5,18,19,21,22)]
+df[,c(1,3:12)] <- lapply(df[,c(1,3:12)],as.factor)
+
+str(df$Adopt)
+df$AdoptionSpeed <- as.factor(df$AdoptionSpeed)
+df$Adopt <- as.factor(df$Adopt)
+df$word_count <- as.numeric(df$word_count)
+df$PC2 <- as.numeric(df$PC2)
+df$most.popular <- as.factor(df$most.popular)
+df$mixbreed <- as.factor(df$mixbreed)
+#df[,c(13:16)] <- as.numeric((unlist(df[,c(13:16)])))
+
+#Cor betweeen age and sterlized
+df$Sterilized <- as.numeric(df$Sterilized)
+a <-cbind(df$Age[df$Sterilized<3],df$Sterilized[df$Sterilized<3])
+cor(a)
+
+
+df[,c(2,13:16,30:32,40,41)] <- lapply(df[,c(2,13:16,30:32,40,41)],as.numeric)
+#df$Age <- as.numeric(df$Age)
+#df$Age<- cut(df$Age, breaks = quantile(df$Age, probs = seq(0,1,by=0.25)),label=c("1","2","3","4"))
+```
+
+```{r}
+##Scale the numerical variables to categorical variables with 5 classes
+range01 <- function(x){(x-min(x))/(max(x)-min(x))}
+fun <- function(df){
+  breaks = quantile(df,probs = seq(0,1,by=0.2))
+  cut(df,breaks,label=c("1","2","3","4","5"))}
+
+
+df[,c(2,13:16,30:32,40,41)] <- lapply(df[,c(2,13:16,30:32,40,41)],range01)
+
+#df[,c(2,13:16,30:32,40,41)] <- lapply(df[,c(2,13:16,30:32,40,41)],fun)
+
+df[,c(2)] <- cut(df[,c(2)],breaks=c(0,0.2,0.4,0.6,0.8,1),include.lowest=TRUE,label=c("1","2","3","4","5"))
+df$Quantity <- cut(df$Quantity,breaks=c(0,0.2,0.4,0.6,0.8,1),include.lowest=TRUE,label=c("1","2","3","4","5"))
+df$Fee <- cut(df$Fee,breaks=c(0,0.2,0.4,0.6,0.8,1),include.lowest=TRUE,label=c("1","2","3","4","5"))
+df$VideoAmt <- cut(df$VideoAmt,breaks=c(0,0.2,0.4,0.6,0.8,1),include.lowest=TRUE,label=c("1","2","3","4","5"))
+df$PhotoAmt <- cut(df$PhotoAmt,breaks=c(0,0.2,0.4,0.6,0.8,1),include.lowest=TRUE,label=c("1","2","3","4","5"))
+df$Crime.Index.Ration.per.100.000..2017 <- cut(df$Crime.Index.Ration.per.100.000..2017,breaks=c(0,0.2,0.4,0.6,0.8,1),include.lowest=TRUE,label=c("1","2","3","4","5"))
+df$living.space.per.capita.sq.ft. <- cut(df$living.space.per.capita.sq.ft.,breaks=c(0,0.2,0.4,0.6,0.8,1),include.lowest=TRUE,label=c("1","2","3","4","5"))
+df$Median.income.by.State <- cut(df$Median.income.by.State,breaks=c(0,0.2,0.4,0.6,0.8,1),include.lowest=TRUE,label=c("1","2","3","4","5"))
+df$word_count <- cut(df$word_count,breaks=c(0,0.2,0.4,0.6,0.8,1),include.lowest=TRUE,label=c("1","2","3","4","5"))
+df$ave_sentiment <- cut(df$ave_sentiment,breaks=c(0,0.2,0.4,0.6,0.8,1),include.lowest=TRUE,label=c("1","2","3","4","5"))
+```
+
+```{r}
+##PCA
+library(psych)
+pca1 <- read.csv("~/Desktop/Spring 2019/758T/Project/Data-final.csv")
+pca1 <- pca1[,25:35]
+
+pca = prcomp(pca1, center= TRUE, scale. = TRUE)
+x<-"PC1"
+summary(pca)#proportion of variance 0.5999, PC1 explains 59.99%...
+
+data_x <- data.frame(pca$x)
+write.csv(x=data_x,file="C:/Users/86187/Desktop/758T Data Mining/prj/pca.csv")
+```
+```{r}
+#STEP1
+library(caret)
+set.seed(12345)
+
+train1 <- df[,c(1:17,29,40)]
+Split1 = sample(nrow(train1), 0.7*nrow(train1))
+rtrain1 <- train1[Split1,]
+validation1 <- train1[-Split1,]
+model1 <- naiveBayes(AdoptionSpeed~., data=rtrain1)
+predicted1 <- predict(model1, newdata = validation1)
+confusion1 <- table(validation1$AdoptionSpeed,predicted1,dnn=list('actual','predicted'))
+confusionMatrix(confusion1)
+```
+
+
+```{r}
+#STEP2
+#dv 01 
+train2 <- df[,c(1:16,29,40)]
+train2$Adopt <- df$Adopt
+
+set.seed(12345)
+Split2 = sample(nrow(train2), 0.7*nrow(train2))
+rtrain2 <- train2[Split2,]
+validation2 <- train2[-Split2,]
+model2 <- naiveBayes(Adopt~., data=rtrain2)
+
+predicted2 <- predict(model2, newdata = validation2)
+confusion2 <- table(validation2$Adopt,predicted2,dnn=list('actual','predicted'))
+confusionMatrix(confusion2)
+```
+
+```{r}
+#STEP3
+#+state
+train3 <- df[,c(1:16,29,30:33,40)]
+set.seed(12345)
+Split3 = sample(nrow(train3), 0.7*nrow(train3))
+rtrain3 <- train3[Split3,]
+validation3 <- train3[-Split3,]
+model3 <- naiveBayes(Adopt~., data=rtrain3)
+
+predicted3 <- predict(model3, newdata = validation3)
+confusion3 <- table(validation3$Adopt,predicted3,dnn=list('actual','predicted'))
+confusionMatrix(confusion3)
+```
+
+```{r}
+#STEP4
+#+most popular
+train4 <- df[,c(1:16,29,30:34,40)]
+set.seed(12345)
+Split4 = sample(nrow(train4), 0.7*nrow(train4))
+rtrain4 <- train4[Split4,]
+validation4 <- train4[-Split4,]
+model4 <- naiveBayes(Adopt~., data=rtrain4)
+
+predicted4 <- predict(model4, newdata = validation4)
+confusion4 <- table(validation4$Adopt,predicted4,dnn=list('actual','predicted'))
+confusionMatrix(confusion4)
+```
+```{r}
+#STEP5
+#+sentiment
+train5 <- df[,c(1:16,29,30:34,40,41)]
+set.seed(12345)
+Split5 = sample(nrow(train5), 0.7*nrow(train5))
+rtrain5 <- train5[Split5,]
+validation5 <- train5[-Split5,]
+model5 <- naiveBayes(Adopt~., data=rtrain5)
+model5
+predicted5 <- predict(model5, newdata = validation5)
+confusion5 <- table(validation5$Adopt,predicted5,dnn=list('actual','predicted'))
+confusionMatrix(confusion5)
+```
+
+```{r}
+#STEP6
+train6 <- df[,c(1:16,18:29,30:34,40,41)]
+set.seed(12345)
+Split6 = sample(nrow(train6), 0.7*nrow(train6))
+rtrain6 <- train6[Split6,]
+validation6 <- train6[-Split6,]
+model6 <- naiveBayes(Adopt~., data=rtrain6)
+
+predicted6 <- predict(model6, newdata = validation6)
+confusion6 <- table(validation6$Adopt,predicted6,dnn=list('actual','predicted'))
+confusionMatrix(confusion6)
+```
+
+```{r}
+#STEP7
+train7 <- df[,c(1:16,30:41)]
+set.seed(12345)
+Split7 = sample(nrow(train7), 0.7*nrow(train7))
+rtrain7 <- train7[Split7,]
+validation7 <- train7[-Split7,]
+model7 <- naiveBayes(Adopt~., data=rtrain7)
+
+predicted7 <- predict(model7, newdata = validation7)
+confusion7 <- table(validation7$Adopt,predicted7,dnn=list('actual','predicted'))
+confusionMatrix(confusion7)
+```
